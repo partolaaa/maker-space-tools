@@ -1,0 +1,12 @@
+{
+  "Errors": [
+    {
+      "AttemptedValue": "360.00000",
+      "Message": "{\"Resource\":{\"Id\":1414834170,\"Name\":\"M-TX-01 | Stickmaschine\"},\"RequestedUniqueId\":\"af602210-4608-44f5-9bed-45dd9ec6550f\",\"ConflictingUniqueId\":\"af602210-4608-44f5-9bed-45dd9ec6550f\",\"FromTime\":\"2026-02-24T10:00:00\",\"ToTime\":\"2026-02-24T14:00:00\",\"ErrorCode\":\"START_TIME_TOO_EARLY\",\"ErrorMessage\":\"This resource cannot be booked more than 360 hours before the booking starts.\"}",
+      "PropertyName": "START_TIME_TOO_EARLY"
+    }
+  ],
+  "Message": "This resource cannot be booked more than 360 hours before the booking starts.",
+  "WasSuccessful": false,
+  "Status": 500
+}

@@ -1,0 +1,33 @@
+{
+  "Id": 0,
+  "Currency": {
+    "Name": "Euro (EUR)",
+    "Code": "EUR",
+    "Format": "€0.00",
+    "Id": 3003,
+    "IdString": "3003",
+    "UpdatedOn": "2026-01-29T08:24:34Z",
+    "CreatedOn": "2012-01-23T14:35:50Z",
+    "UpdatedOnUtc": "2026-01-29T08:24:34Z",
+    "CreatedOnUtc": "2012-01-23T14:35:50Z",
+    "UniqueId": "7f7e322a-4c49-4a6f-9571-a83cb99202b8",
+    "IsNull": false,
+    "Context": null
+  },
+  "UsedExtraServices": [],
+  "UsedBookingCredits": [],
+  "TotalAmount": 0.00,
+  "TaxAmount": 0.00,
+  "LinesRaw": [
+    {
+      "DiscountCode": null,
+      "DiscountAmount": null,
+      "BookingUniqueId": "af602210-4608-44f5-9bed-45dd9ec6550f",
+      "UnitPrice": 0.00,
+      "SubTotal": 0.00,
+      "TaxAmount": 0.00,
+      "Description": "3D-Drucker<br/>M-TX-01 | Stickmaschine: 10/02/2026 10:00 > 14:00 (#51190)",
+      "CoworkerProductName": null
+    }
+  ]
+}

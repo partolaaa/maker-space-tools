@@ -1,0 +1,21 @@
+{
+  "basket": [
+    {
+      "Type": "booking",
+      "Booking": {
+        "UniqueId": "bd8099d2-30a6-48d2-b7cf-1339386ac646",
+        "FromTime": "2026-02-13T13:00:00.000Z",
+        "ToTime": "2026-02-13T15:00:00.000Z",
+        "CustomFields": {
+          "Data": []
+        },
+        "ResourceId": 1414834170,
+        "CoworkerId": 1421163984,
+        "Notes": "",
+        "BookingVisitors": [],
+        "BookingProducts": []
+      }
+    }
+  ],
+  "discountCode": null
+}

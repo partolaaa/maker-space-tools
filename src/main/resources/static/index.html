@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MakerSpace Machine Booking</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Round">
+</head>
+<body>
+<div class="layout">
+    <aside class="side-menu">
+        <button class="side-button is-active" id="navBooking" type="button" aria-label="Bookings" title="Bookings">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M7 2a1 1 0 0 1 1 1v1h8V3a1 1 0 1 1 2 0v1h1a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1V3a1 1 0 0 1 1-1Zm12 8H5v8h14v-8ZM6 8h12V6H6v2Z"></path>
+            </svg>
+        </button>
+        <button class="side-button" id="navAuto" type="button" aria-label="Auto bookings" title="Auto bookings">
+            <span class="material-icons-round" aria-hidden="true" style="font-size: 20px; line-height: 1;">auto_mode</span>
+        </button>
+        <button class="side-button" id="loginButton" type="button" aria-label="Sign in" title="Sign in">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm0 2c-3.3 0-8 1.7-8 5v2h16v-2c0-3.3-4.7-5-8-5Z"></path>
+            </svg>
+        </button>
+        <button class="side-button is-danger is-hidden" id="logoutButton" type="button" aria-label="Logout" title="Logout">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M16 17v-2h-4v-2h4v-2l3 3-3 3Zm-5-13a2 2 0 0 1 2 2v3h-2V6H5v12h6v-3h2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h6Z"></path>
+            </svg>
+        </button>
+    </aside>
+    <div class="app">
+        <header class="main-header">
+            <div class="header-brand">
+                <div class="header-title">MakerSpace Machine Booking</div>
+                <div class="header-subtitle">Check availability and book your embroidery machine</div>
+            </div>
+        </header>
+        <div class="page" id="bookingPage">
+            <main class="app-main">
+                <section class="card calendar-card">
+            <div class="card-title">Select a Day</div>
+            <div class="calendar-header">
+                <button class="nav-button" id="prevMonth" type="button">Previous</button>
+                <div class="month-label" id="monthLabel"></div>
+                <button class="nav-button" id="nextMonth" type="button">Next</button>
+            </div>
+            <div class="calendar-weekdays">
+                <div>Mon</div>
+                <div>Tue</div>
+                <div>Wed</div>
+                <div>Thu</div>
+                <div>Fri</div>
+                <div>Sat</div>
+                <div>Sun</div>
+            </div>
+            <div class="calendar-grid" id="calendarGrid"></div>
+            <div class="calendar-footer">
+                Selected day:
+                <span class="selected-date" id="selectedDateLabel">None</span>
+            </div>
+                </section>
+                <section class="card slots-card">
+            <div class="card-title">Daily Slots</div>
+            <div class="slots-header">
+                <div class="legend">
+                    <div class="legend-item">
+                        <span class="legend-dot free"></span>
+                        Free
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-dot busy"></span>
+                        Busy
+                    </div>
+                </div>
+                <div class="resource-name" id="resourceName">Machine</div>
+            </div>
+            <div class="slots-controls">
+                <div class="selection-info">
+                    <div class="selection-item">Start: <span class="selection-value" id="startTimeLabel">--</span></div>
+                    <div class="selection-item">End: <span class="selection-value" id="endTimeLabel">--</span></div>
+                    <div class="selection-item">Duration: <span class="selection-value" id="durationLabel">--</span></div>
+                </div>
+                <div class="mode-toggle">
+                    <label class="switch">
+                        <input type="checkbox" id="autoModeToggle">
+                        <span class="slider"></span>
+                    </label>
+                    <span>Auto</span>
+                </div>
+                <button class="primary-button" id="bookButton" type="button" disabled>Book Range</button>
+            </div>
+            <div class="slots-body">
+                <div class="slots-grid" id="slotsGrid"></div>
+                <div class="loading-overlay is-hidden" id="loadingOverlay">
+                    <div class="spinner"></div>
+                    <div class="loading-text" id="loadingText">Loading availability...</div>
+                </div>
+            </div>
+            <div class="status-message" id="statusMessage"></div>
+            <div class="auto-summary is-hidden" id="autoSummary">
+                <div class="auto-row">
+                    <span>Start date</span>
+                    <strong id="autoStartDateLabel">--</strong>
+                </div>
+                <div class="auto-row">
+                    <span>Weekday</span>
+                    <strong id="autoWeekdayLabel">--</strong>
+                </div>
+                <div class="auto-row">
+                    <span>Time</span>
+                    <strong id="autoTimeLabel">--</strong>
+                </div>
+                <div class="auto-row">
+                    <span>Duration</span>
+                    <strong id="autoDurationLabel">--</strong>
+                </div>
+                <div class="status-message" id="autoSelectionStatus"></div>
+            </div>
+                </section>
+                <section class="card bookings-card full-width">
+            <div class="bookings-header">
+                <div class="bookings-title">Pending bookings</div>
+                <button class="secondary-button" id="refreshBookings" type="button">Refresh</button>
+            </div>
+            <div class="bookings-list" id="pendingBookingsList"></div>
+                </section>
+            </main>
+        </div>
+        <div class="page is-hidden" id="autoPage">
+            <div class="card-title">Auto bookings</div>
+            <div class="app-main">
+                <section class="card">
+                    <div class="card-title">Scheduled jobs</div>
+                    <div class="job-list" id="jobList"></div>
+                </section>
+                <section class="card">
+                    <div class="card-title">Attempts</div>
+                    <div class="attempt-feed" id="attemptFeed"></div>
+                </section>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal is-hidden" id="authModal" aria-hidden="true">
+    <div class="modal-backdrop" id="authBackdrop"></div>
+    <div class="modal-panel">
+        <div class="modal-header">
+            <div class="modal-title">Sign in</div>
+            <button class="modal-close" id="authClose" type="button" aria-label="Close">×</button>
+        </div>
+        <div class="modal-content">
+            <form class="auth-form" id="authForm">
+                <div class="auth-card">
+                    <div class="auth-heading">Connect to MakerSpace</div>
+                    <div class="auth-subtitle">Use your MakerSpace portal credentials.</div>
+                </div>
+                <div class="form-grid">
+                    <label class="form-field span-two">
+                        <span>Email</span>
+                        <input type="email" id="authEmail" autocomplete="username" required>
+                    </label>
+                    <label class="form-field span-two">
+                        <span>Password</span>
+                        <div class="password-field">
+                            <input type="password" id="authPassword" autocomplete="current-password" required>
+                            <button class="toggle-password" id="togglePassword" type="button">Show</button>
+                        </div>
+                    </label>
+                    <label class="form-field">
+                        <span>TOTP</span>
+                        <input type="text" id="authTotp" placeholder="Optional">
+                    </label>
+                    <label class="form-field">
+                        <span>Client ID</span>
+                        <input type="text" id="authClientId" placeholder="Optional">
+                    </label>
+                </div>
+                <button class="primary-button" type="submit">Authenticate</button>
+                <div class="status-message" id="authStatus"></div>
+            </form>
+        </div>
+    </div>
+</div>
+<div class="toast-container" id="toastContainer"></div>
+<script src="app.js"></script>
+</body>
+</html>

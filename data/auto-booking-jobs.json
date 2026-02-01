@@ -1,0 +1,12 @@
+[ {
+  "id" : "5a668ceb-eccd-46d5-9a77-ad4338237361",
+  "startDate" : "2026-02-21",
+  "dayOfWeek" : "SATURDAY",
+  "startTime" : "11:00",
+  "endTime" : "15:00",
+  "status" : "ACTIVE",
+  "lastAttemptAt" : null,
+  "lastBookedDate" : null,
+  "createdAt" : 1769898100.608919000,
+  "updatedAt" : 1769898100.608919000
+} ]

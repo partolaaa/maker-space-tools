@@ -1,0 +1,19 @@
+[
+  {
+    "Type": "booking",
+    "Booking": {
+      "Id": 0,
+      "ResourceId": 1414834170,
+      "FromTime": "2026-02-10T10:00:00.000Z",
+      "ToTime": "2026-02-10T14:00:00.000Z",
+      "CoworkerId": 1421163984,
+      "ChargeNow": true,
+      "BookingVisitors": [],
+      "BookingProducts": [],
+      "CustomFields": {
+        "Data": []
+      },
+      "UniqueId": "af602210-4608-44f5-9bed-45dd9ec6550f"
+    }
+  }
+]
