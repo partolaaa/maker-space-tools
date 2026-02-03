@@ -40,8 +40,8 @@ class BookingPreviewer {
     private MakerSpaceInvoicePreviewRequestItem buildPreviewItem(String uniqueId, BookingTiming timing) {
         MakerSpaceInvoicePreviewRequestItem.Booking booking = MakerSpaceInvoicePreviewRequestItem.Booking.builder()
                 .resourceId(setupData.embroideryMachine().id())
-                .fromTime(timing.startInstant())
-                .toTime(timing.endInstant())
+                .fromTime(NexudusBookingTimeAdjuster.adjust(timing.startDateTime()))
+                .toTime(NexudusBookingTimeAdjuster.adjust(timing.endDateTime()))
                 .coworkerId(setupData.coworker().id())
                 .chargeNow(true)
                 .uniqueId(uniqueId)

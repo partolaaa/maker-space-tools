@@ -29,8 +29,8 @@ class BookingSubmitter {
     private MakerSpaceBasketRequest buildBasket(String uniqueId, BookingTiming timing) {
         MakerSpaceBasketRequest.Booking booking = MakerSpaceBasketRequest.Booking.builder()
                 .uniqueId(uniqueId)
-                .fromTime(timing.startInstant())
-                .toTime(timing.endInstant())
+                .fromTime(NexudusBookingTimeAdjuster.adjust(timing.startDateTime()))
+                .toTime(NexudusBookingTimeAdjuster.adjust(timing.endDateTime()))
                 .resourceId(setupData.embroideryMachine().id())
                 .coworkerId(setupData.coworker().id())
                 .build();
