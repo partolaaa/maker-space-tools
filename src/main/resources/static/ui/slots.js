@@ -89,9 +89,11 @@ export function createSlots({ api, config, showToast, onSelectionChange }) {
             const intervalSlots = currentSlots.filter((slot) => !slot.boundary);
             intervalMinutes = resolveIntervalMinutes(intervalSlots);
             renderSlots();
-            const message = isAutoMode
+            const baseMessage = isAutoMode
                 ? "Auto mode: select a date and time range (busy allowed)."
                 : "Select start and end time between 09:00 and 17:00 (max 4h).";
+            const horizonMessage = isAutoMode ? null : resolveHorizonMessage(intervalMinutes);
+            const message = horizonMessage ? `${baseMessage} ${horizonMessage}` : baseMessage;
             setStatus(message, true);
         } catch (error) {
             currentSlots = [];
@@ -116,6 +118,8 @@ export function createSlots({ api, config, showToast, onSelectionChange }) {
         const startMinutes = selectedStartTime ? timeToMinutes(selectedStartTime) : null;
         const endMinutes = selectedEndTime ? timeToMinutes(selectedEndTime) : null;
         const hasRange = startMinutes !== null && endMinutes !== null && endMinutes > startMinutes;
+        const isStartSelection = !selectedStartTime || selectedEndTime;
+        const endLimitMinutes = selectedStartTime && !selectedEndTime ? resolveEndLimitMinutes(startMinutes) : null;
 
         currentSlots.forEach((slot) => {
             const button = document.createElement("button");
@@ -128,6 +132,12 @@ export function createSlots({ api, config, showToast, onSelectionChange }) {
             button.classList.add(booked ? "slot--busy" : "slot--free");
 
             const slotMinutes = timeToMinutes(slot.time);
+            if (!isAutoMode && isStartSelection && isStartBeyondBookingWindow(slot.time)) {
+                button.classList.add("slot--start-blocked");
+            }
+            if (endLimitMinutes !== null && slotMinutes > endLimitMinutes) {
+                button.classList.add("slot--end-blocked");
+            }
             if (hasRange && !slot.boundary && !booked && !isStart && !isEnd && slotMinutes > startMinutes && slotMinutes < endMinutes) {
                 button.classList.add("slot--range");
             }
@@ -150,14 +160,14 @@ export function createSlots({ api, config, showToast, onSelectionChange }) {
         const slot = slotMap.get(time);
         if (!selectedStartTime || selectedEndTime) {
             if (!isStartTimeAllowed(time, slot)) {
-                setStatus(isAutoMode ? "Select a start time between 09:00 and 17:00." : "Select a free start time between 09:00 and 17:00.", false);
+                setStatus(resolveStartTimeMessage(time, slot), false);
                 return;
             }
             selectedStartTime = time;
             selectedEndTime = null;
             updateSelectionLabels();
             renderSlots();
-            setStatus("Select an end time within 4 hours, up to 17:00.", true);
+            setStatus(resolveEndLimitMessage(selectedStartTime), true);
             updateBookButton();
             return;
         }
@@ -166,15 +176,29 @@ export function createSlots({ api, config, showToast, onSelectionChange }) {
         const endMinutes = timeToMinutes(time);
         if (endMinutes <= startMinutes) {
             if (!isStartTimeAllowed(time, slot)) {
-                setStatus(isAutoMode ? "Select a start time between 09:00 and 17:00." : "Select a free start time between 09:00 and 17:00.", false);
+                setStatus(resolveStartTimeMessage(time, slot), false);
                 return;
             }
             selectedStartTime = time;
             selectedEndTime = null;
             updateSelectionLabels();
             renderSlots();
-            setStatus("Select an end time within 4 hours, up to 17:00.", true);
+            setStatus(resolveEndLimitMessage(selectedStartTime), true);
             updateBookButton();
+            return;
+        }
+
+        if (!isEndTimeAllowed(endMinutes, startMinutes)) {
+            if (isStartTimeAllowed(time, slot)) {
+                selectedStartTime = time;
+                selectedEndTime = null;
+                updateSelectionLabels();
+                renderSlots();
+                setStatus(resolveEndLimitMessage(selectedStartTime), true);
+                updateBookButton();
+                return;
+            }
+            setStatus(resolveEndLimitMessage(selectedStartTime), false);
             return;
         }
 
@@ -304,15 +328,94 @@ export function createSlots({ api, config, showToast, onSelectionChange }) {
         if (!slot) {
             return false;
         }
+        if (!isAutoMode && isStartBeyondBookingWindow(time)) {
+            return false;
+        }
         if (isAutoMode) {
             return true;
         }
         return !isSlotBlocked(slot);
     }
 
+    function resolveStartTimeMessage(time, slot) {
+        const minutes = timeToMinutes(time);
+        if (minutes < config.workingStartMinutes || minutes >= config.workingEndMinutes) {
+            return "Select a start time between 09:00 and 17:00.";
+        }
+        if (!slot) {
+            return "Select a start time between 09:00 and 17:00.";
+        }
+        if (!isAutoMode && isStartBeyondBookingWindow(time)) {
+            return `Start time must be within ${config.maxBookingHours} hours.`;
+        }
+        if (!isAutoMode && isSlotBlocked(slot)) {
+            return "Select a free start time between 09:00 and 17:00.";
+        }
+        return "Select a start time between 09:00 and 17:00.";
+    }
+
+    function resolveEndLimitMinutes(startMinutes) {
+        if (startMinutes === null || startMinutes === undefined) {
+            return config.workingEndMinutes;
+        }
+        const maxEndMinutes = startMinutes + config.maxBookingDurationMinutes;
+        return Math.min(maxEndMinutes, config.workingEndMinutes);
+    }
+
+    function resolveEndLimitMessage(startTime) {
+        if (!startTime) {
+            return "Select an end time within 4 hours, up to 17:00.";
+        }
+        const startMinutes = timeToMinutes(startTime);
+        const endLimitMinutes = resolveEndLimitMinutes(startMinutes);
+        const limitTime = minutesToTime(endLimitMinutes);
+        return `Select an end time within 4 hours (up to ${limitTime}).`;
+    }
+
+    function isEndTimeAllowed(endMinutes, startMinutes) {
+        const endLimitMinutes = resolveEndLimitMinutes(startMinutes);
+        return endMinutes > startMinutes && endMinutes <= endLimitMinutes;
+    }
+
     function isBeyondBookingWindow(date) {
         const day = startOfDay(date);
         return day > startOfDay(maxDate);
+    }
+
+    function resolveSlotInstant(time) {
+        if (!selectedDate) {
+            return null;
+        }
+        const minutes = timeToMinutes(time);
+        const dayStart = startOfDay(selectedDate);
+        return new Date(dayStart.getTime() + minutes * 60000);
+    }
+
+    function isStartBeyondBookingWindow(time) {
+        const slotInstant = resolveSlotInstant(time);
+        if (!slotInstant) {
+            return false;
+        }
+        return slotInstant > maxDate;
+    }
+
+    function resolveHorizonMessage(slotIntervalMinutes) {
+        if (!selectedDate) {
+            return null;
+        }
+        const maxDay = startOfDay(maxDate);
+        if (startOfDay(selectedDate).getTime() !== maxDay.getTime()) {
+            return null;
+        }
+        const rawMinutes = maxDate.getHours() * 60 + maxDate.getMinutes();
+        const roundedMinutes = Math.floor(rawMinutes / slotIntervalMinutes) * slotIntervalMinutes;
+        if (roundedMinutes >= config.workingEndMinutes) {
+            return null;
+        }
+        if (roundedMinutes <= config.workingStartMinutes) {
+            return "Start times are no longer available for this day (360h limit).";
+        }
+        return `Start times available until ${minutesToTime(roundedMinutes)} (360h limit).`;
     }
 
     function buildDefaultSlots() {

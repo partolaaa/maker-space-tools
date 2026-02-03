@@ -351,6 +351,18 @@ body {
     cursor: pointer;
 }
 
+.slot--start-blocked {
+    background: #f1f5f9;
+    color: #64748b;
+    border: 1px dashed #cbd5f5;
+}
+
+.slot--end-blocked {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px dashed #fcd34d;
+}
+
 .slot--range {
     background: #c7d2fe;
     color: #1e3a8a;
