@@ -15,10 +15,13 @@ automation:
   attempt-interval: PT5M
   feed-size: 200
 
+booking:
+  time-zone: Europe/Berlin
+
 makerspace:
   base-url: https://makerspace.spaces.nexudus.com
   auth:
     username: ${MAKERSPACE_USERNAME:example.email@mail.com}
     password: ${MAKERSPACE_PASSWORD:example_secret_password}
     client-id: ${MAKERSPACE_CLIENT_ID:nexudus.portal.example.email@mail.com}
-    totp: ${MAKERSPACE_TOTP}
+    totp: ${MAKERSPACE_TOTP:}
