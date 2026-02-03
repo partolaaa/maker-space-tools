@@ -1,4 +1,6 @@
-# MakerSpaceTools
+<p align="center">
+  <img src="img/favicon.png" alt="MakerSpaceTools Logo" width="100" height="100">
+</p>
 
 > Fast, reliable MakerSpace bookings with a clean UI, a focused API, and an auto-booking scheduler.
 
