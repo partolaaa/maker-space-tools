@@ -2,9 +2,12 @@
     const bookingConfig = {
         maxBookingHours: 360,
         maxBookingDurationMinutes: 240,
-        workingStartMinutes: 9 * 60,
-        workingEndMinutes: 17 * 60,
-        autoSlotMinutes: 30
+        autoSlotMinutes: 30,
+        workingHoursByDay: {
+            weekday: { startMinutes: 8 * 60, endMinutes: 16 * 60 },
+            saturday: { startMinutes: 9 * 60, endMinutes: 17 * 60 },
+            sunday: null
+        }
     };
 
     const toastContainer = document.getElementById("toastContainer");

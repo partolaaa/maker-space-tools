@@ -1,10 +1,12 @@
 package com.makerspacetools.automation;
 
+import com.makerspacetools.model.WorkDaySchedule;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -18,8 +20,6 @@ import java.util.UUID;
 @Service
 public class AutoBookingJobService {
 
-    private static final LocalTime WORKDAY_START = LocalTime.of(9, 0);
-    private static final LocalTime WORKDAY_END = LocalTime.of(17, 0);
     private static final int MAX_DURATION_MINUTES = 240;
     private static final int SLOT_MINUTES = 30;
 
@@ -108,17 +108,12 @@ public class AutoBookingJobService {
 
     private static LocalTime validatedEndTime(AutoBookingJobRequest request, LocalDate startDate, LocalTime startTime) {
         LocalTime endTime = request.endTime();
-        if (startDate == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Start date is required.");
+        if (startDate.getDayOfWeek() == DayOfWeek.SUNDAY) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Auto bookings are not available on Sundays.");
         }
-        if (startTime == null || endTime == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Start and end time are required.");
-        }
-        if (!startTime.isBefore(endTime)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "End time must be after start time.");
-        }
-        if (startTime.isBefore(WORKDAY_START) || endTime.isAfter(WORKDAY_END)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Time must be within 09:00 and 17:00.");
+        WorkDaySchedule.TimeWindow workday = WorkDaySchedule.businessHours().windowFor(startDate.getDayOfWeek());
+        if (startTime.isBefore(workday.start()) || endTime.isAfter(workday.end())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Time must be within 08:00-16:00 Mon-Fri or 09:00-17:00 Sat.");
         }
         return endTime;
     }

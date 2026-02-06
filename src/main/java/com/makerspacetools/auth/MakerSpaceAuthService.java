@@ -127,7 +127,7 @@ public class MakerSpaceAuthService {
     }
 
     /**
-     * Invalidates the current token so the next call refreshes it.
+     * Invalidates the current token, so the next call refreshes it.
      */
     public void invalidateToken() {
         if (resolveCredentials(isFallbackAllowed()) != null) {

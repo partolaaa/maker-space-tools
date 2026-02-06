@@ -3,9 +3,11 @@ package com.makerspacetools.service;
 import com.makerspacetools.api.BookingRequest;
 import com.makerspacetools.api.BookingResponse;
 import com.makerspacetools.makerspace.response.MakerSpaceResourceAvailabilityResponse;
+import com.makerspacetools.model.WorkDaySchedule;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -22,8 +24,6 @@ import java.util.TreeMap;
 class BookingValidator {
 
     private static final int MAX_BOOKING_DURATION_MINUTES = 240;
-    private static final LocalTime WORKDAY_START = LocalTime.of(9, 0);
-    private static final LocalTime WORKDAY_END = LocalTime.of(17, 0);
 
     private final MachineAvailabilityChecker availabilityService;
 
@@ -95,8 +95,13 @@ class BookingValidator {
         if (!startDateTime.toLocalDate().equals(endDateTime.toLocalDate())) {
             return failureResponse("Booking must stay within a single day.", List.of("Choose a shorter duration."));
         }
-        if (startDateTime.toLocalTime().isBefore(WORKDAY_START) || endDateTime.toLocalTime().isAfter(WORKDAY_END)) {
-            return failureResponse("Booking is outside working hours.", List.of("Working hours are 09:00 to 17:00."));
+        LocalDate date = startDateTime.toLocalDate();
+        if (date.getDayOfWeek() == DayOfWeek.SUNDAY) {
+            return failureResponse("Bookings are not available on Sundays.", List.of("Pick a weekday or Saturday."));
+        }
+        WorkDaySchedule.TimeWindow workday = WorkDaySchedule.businessHours().windowFor(date.getDayOfWeek());
+        if (startDateTime.toLocalTime().isBefore(workday.start()) || endDateTime.toLocalTime().isAfter(workday.end())) {
+            return failureResponse("Booking is outside working hours.", List.of("Working hours are 08:00-16:00 Mon-Fri and 09:00-17:00 Sat."));
         }
         return null;
     }

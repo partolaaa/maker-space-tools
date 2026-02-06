@@ -4,6 +4,7 @@ import com.makerspacetools.api.AvailabilitySlot;
 import com.makerspacetools.api.MachineAvailabilityResponse;
 import com.makerspacetools.makerspace.response.MakerSpaceResourceAvailabilityResponse;
 import com.makerspacetools.model.SetupData;
+import com.makerspacetools.model.WorkDaySchedule;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -29,8 +30,6 @@ public class MachineAvailabilityChecker {
 
     private static final int DEFAULT_INTERVAL_MINUTES = 30;
     private static final int MAX_BOOKING_HOURS_AHEAD = 360;
-    private static final LocalTime WORKDAY_START = LocalTime.of(9, 0);
-    private static final LocalTime WORKDAY_END = LocalTime.of(17, 0);
     private static final String DEFAULT_MACHINE_NAME = "Embroidery Machine";
 
     private final MachineQueryService queryService;
@@ -52,7 +51,7 @@ public class MachineAvailabilityChecker {
         validateDate(date);
         MakerSpaceResourceAvailabilityResponse availability = loadAvailability(date);
         List<MakerSpaceResourceAvailabilityResponse.AvailableSlot> slotsForDate = slotsForDate(availability, date).stream()
-                .filter(slot -> isWithinWorkday(slot.dateTime()))
+                .filter(slot -> WorkDaySchedule.businessHours().isWithinSchedule(slot.dateTime()))
                 .toList();
         List<AvailabilitySlot> slots = slotsForDate.stream()
                 .map(AvailabilitySlot::from)
@@ -114,13 +113,5 @@ public class MachineAvailabilityChecker {
         }
         long minutes = Duration.between(first, second).toMinutes();
         return minutes <= 0 ? DEFAULT_INTERVAL_MINUTES : (int) minutes;
-    }
-
-    private boolean isWithinWorkday(LocalDateTime dateTime) {
-        if (dateTime == null) {
-            return false;
-        }
-        LocalTime time = dateTime.toLocalTime();
-        return !time.isBefore(WORKDAY_START) && time.isBefore(WORKDAY_END);
     }
 }

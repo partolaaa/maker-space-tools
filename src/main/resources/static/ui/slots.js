@@ -25,6 +25,27 @@ export function createSlots({ api, config, showToast, onSelectionChange }) {
 
     const maxDate = addHours(new Date(), config.maxBookingHours);
 
+    function resolveWorkingHours(date) {
+        if (!date) {
+            return null;
+        }
+        const day = date.getDay();
+        if (day === 0) {
+            return config.workingHoursByDay.sunday;
+        }
+        if (day === 6) {
+            return config.workingHoursByDay.saturday;
+        }
+        return config.workingHoursByDay.weekday;
+    }
+
+    function formatWorkingRange(workingHours) {
+        if (!workingHours) {
+            return null;
+        }
+        return `${minutesToTime(workingHours.startMinutes)} and ${minutesToTime(workingHours.endMinutes)}`;
+    }
+
     let selectedDate = null;
     let selectedStartTime = null;
     let selectedEndTime = null;
@@ -70,12 +91,23 @@ export function createSlots({ api, config, showToast, onSelectionChange }) {
         slotsGrid.innerHTML = "";
         resetSelection();
         setLoading(true, "Loading availability...");
+        const workingHours = resolveWorkingHours(date);
+        if (!workingHours) {
+            currentSlots = [];
+            slotMap = new Map();
+            intervalMinutes = config.autoSlotMinutes;
+            renderSlots();
+            setStatus("No booking hours for this day.", false);
+            setLoading(false, "");
+            return;
+        }
         if (isAutoMode && isBeyondBookingWindow(date)) {
-            currentSlots = buildDefaultSlots();
+            currentSlots = buildDefaultSlots(workingHours);
             slotMap = new Map(currentSlots.map((slot) => [slot.time, slot]));
             intervalMinutes = config.autoSlotMinutes;
             renderSlots();
-            setStatus("Availability not available yet. Select any time range.", true);
+            const rangeLabel = formatWorkingRange(workingHours);
+            setStatus(`Availability not available yet. Select any time range between ${rangeLabel}.`, true);
             setLoading(false, "");
             return;
         }
@@ -83,16 +115,17 @@ export function createSlots({ api, config, showToast, onSelectionChange }) {
             const payload = await api.getAvailability(formatDate(date));
             resourceName.textContent = payload.resourceName || "Machine";
             const rawSlots = Array.isArray(payload.slots) ? payload.slots : [];
-            currentSlots = normalizeSlots(rawSlots);
+            currentSlots = normalizeSlots(rawSlots, workingHours);
             currentSlots.sort((a, b) => a.time.localeCompare(b.time));
             slotMap = new Map(currentSlots.map((slot) => [slot.time, slot]));
             const intervalSlots = currentSlots.filter((slot) => !slot.boundary);
             intervalMinutes = resolveIntervalMinutes(intervalSlots);
             renderSlots();
+            const rangeLabel = formatWorkingRange(workingHours);
             const baseMessage = isAutoMode
-                ? "Auto mode: select a date and time range (busy allowed)."
-                : "Select start and end time between 09:00 and 17:00 (max 4h).";
-            const horizonMessage = isAutoMode ? null : resolveHorizonMessage(intervalMinutes);
+                ? `Auto mode: select a date and time range between ${rangeLabel} (busy allowed).`
+                : `Select start and end time between ${rangeLabel} (max 4h).`;
+            const horizonMessage = isAutoMode ? null : resolveHorizonMessage(intervalMinutes, workingHours);
             const message = horizonMessage ? `${baseMessage} ${horizonMessage}` : baseMessage;
             setStatus(message, true);
         } catch (error) {
@@ -119,7 +152,10 @@ export function createSlots({ api, config, showToast, onSelectionChange }) {
         const endMinutes = selectedEndTime ? timeToMinutes(selectedEndTime) : null;
         const hasRange = startMinutes !== null && endMinutes !== null && endMinutes > startMinutes;
         const isStartSelection = !selectedStartTime || selectedEndTime;
-        const endLimitMinutes = selectedStartTime && !selectedEndTime ? resolveEndLimitMinutes(startMinutes) : null;
+        const workingHours = resolveWorkingHours(selectedDate);
+        const endLimitMinutes = selectedStartTime && !selectedEndTime && workingHours
+            ? resolveEndLimitMinutes(startMinutes, workingHours)
+            : null;
 
         currentSlots.forEach((slot) => {
             const button = document.createElement("button");
@@ -242,13 +278,18 @@ export function createSlots({ api, config, showToast, onSelectionChange }) {
         if (!selectedStartTime || !selectedEndTime) {
             return { valid: false, message: "Select a start and end time." };
         }
+        const workingHours = resolveWorkingHours(selectedDate);
+        if (!workingHours) {
+            return { valid: false, message: "No booking hours for this day." };
+        }
         const startMinutes = timeToMinutes(selectedStartTime);
         const endMinutes = timeToMinutes(selectedEndTime);
-        if (startMinutes < config.workingStartMinutes || startMinutes >= config.workingEndMinutes) {
-            return { valid: false, message: "Start time must be between 09:00 and 17:00." };
+        const rangeLabel = formatWorkingRange(workingHours);
+        if (startMinutes < workingHours.startMinutes || startMinutes >= workingHours.endMinutes) {
+            return { valid: false, message: `Start time must be between ${rangeLabel}.` };
         }
-        if (endMinutes > config.workingEndMinutes) {
-            return { valid: false, message: "End time must be no later than 17:00." };
+        if (endMinutes > workingHours.endMinutes) {
+            return { valid: false, message: `End time must be no later than ${minutesToTime(workingHours.endMinutes)}.` };
         }
         const durationMinutes = calculateDurationMinutes();
         if (durationMinutes <= 0) {
@@ -273,15 +314,18 @@ export function createSlots({ api, config, showToast, onSelectionChange }) {
         return timeToMinutes(selectedEndTime) - timeToMinutes(selectedStartTime);
     }
 
-    function normalizeSlots(slots) {
+    function normalizeSlots(slots, workingHours) {
+        if (!workingHours) {
+            return [];
+        }
         let filtered = slots.filter((slot) => {
             const minutes = timeToMinutes(slot.time);
-            return minutes >= config.workingStartMinutes && minutes < config.workingEndMinutes;
+            return minutes >= workingHours.startMinutes && minutes < workingHours.endMinutes;
         });
         if (filtered.length === 0) {
             return [];
         }
-        const boundaryTime = minutesToTime(config.workingEndMinutes);
+        const boundaryTime = minutesToTime(workingHours.endMinutes);
         let hasBoundary = false;
         filtered = filtered.map((slot) => {
             if (slot.time === boundaryTime) {
@@ -321,8 +365,12 @@ export function createSlots({ api, config, showToast, onSelectionChange }) {
     }
 
     function isStartTimeAllowed(time, slot) {
+        const workingHours = resolveWorkingHours(selectedDate);
+        if (!workingHours) {
+            return false;
+        }
         const minutes = timeToMinutes(time);
-        if (minutes < config.workingStartMinutes || minutes >= config.workingEndMinutes) {
+        if (minutes < workingHours.startMinutes || minutes >= workingHours.endMinutes) {
             return false;
         }
         if (!slot) {
@@ -338,43 +386,56 @@ export function createSlots({ api, config, showToast, onSelectionChange }) {
     }
 
     function resolveStartTimeMessage(time, slot) {
+        const workingHours = resolveWorkingHours(selectedDate);
+        if (!workingHours) {
+            return "No booking hours for this day.";
+        }
+        const rangeLabel = formatWorkingRange(workingHours);
         const minutes = timeToMinutes(time);
-        if (minutes < config.workingStartMinutes || minutes >= config.workingEndMinutes) {
-            return "Select a start time between 09:00 and 17:00.";
+        if (minutes < workingHours.startMinutes || minutes >= workingHours.endMinutes) {
+            return `Select a start time between ${rangeLabel}.`;
         }
         if (!slot) {
-            return "Select a start time between 09:00 and 17:00.";
+            return `Select a start time between ${rangeLabel}.`;
         }
         if (!isAutoMode && isStartBeyondBookingWindow(time)) {
             return `Start time must be within ${config.maxBookingHours} hours.`;
         }
         if (!isAutoMode && isSlotBlocked(slot)) {
-            return "Select a free start time between 09:00 and 17:00.";
+            return `Select a free start time between ${rangeLabel}.`;
         }
-        return "Select a start time between 09:00 and 17:00.";
+        return `Select a start time between ${rangeLabel}.`;
     }
 
-    function resolveEndLimitMinutes(startMinutes) {
+    function resolveEndLimitMinutes(startMinutes, workingHours) {
+        if (!workingHours) {
+            return null;
+        }
         if (startMinutes === null || startMinutes === undefined) {
-            return config.workingEndMinutes;
+            return workingHours.endMinutes;
         }
         const maxEndMinutes = startMinutes + config.maxBookingDurationMinutes;
-        return Math.min(maxEndMinutes, config.workingEndMinutes);
+        return Math.min(maxEndMinutes, workingHours.endMinutes);
     }
 
     function resolveEndLimitMessage(startTime) {
+        const workingHours = resolveWorkingHours(selectedDate);
+        if (!workingHours) {
+            return "No booking hours for this day.";
+        }
         if (!startTime) {
-            return "Select an end time within 4 hours, up to 17:00.";
+            return `Select an end time within 4 hours, up to ${minutesToTime(workingHours.endMinutes)}.`;
         }
         const startMinutes = timeToMinutes(startTime);
-        const endLimitMinutes = resolveEndLimitMinutes(startMinutes);
+        const endLimitMinutes = resolveEndLimitMinutes(startMinutes, workingHours);
         const limitTime = minutesToTime(endLimitMinutes);
         return `Select an end time within 4 hours (up to ${limitTime}).`;
     }
 
     function isEndTimeAllowed(endMinutes, startMinutes) {
-        const endLimitMinutes = resolveEndLimitMinutes(startMinutes);
-        return endMinutes > startMinutes && endMinutes <= endLimitMinutes;
+        const workingHours = resolveWorkingHours(selectedDate);
+        const endLimitMinutes = resolveEndLimitMinutes(startMinutes, workingHours);
+        return endLimitMinutes !== null && endMinutes > startMinutes && endMinutes <= endLimitMinutes;
     }
 
     function isBeyondBookingWindow(date) {
@@ -399,9 +460,12 @@ export function createSlots({ api, config, showToast, onSelectionChange }) {
         return slotInstant > maxDate;
     }
 
-    function resolveHorizonMessage(slotIntervalMinutes) {
+    function resolveHorizonMessage(slotIntervalMinutes, workingHours) {
         if (!selectedDate) {
             return null;
+        }
+        if (!workingHours) {
+            return "No booking hours for this day.";
         }
         const maxDay = startOfDay(maxDate);
         if (startOfDay(selectedDate).getTime() !== maxDay.getTime()) {
@@ -409,18 +473,21 @@ export function createSlots({ api, config, showToast, onSelectionChange }) {
         }
         const rawMinutes = maxDate.getHours() * 60 + maxDate.getMinutes();
         const roundedMinutes = Math.floor(rawMinutes / slotIntervalMinutes) * slotIntervalMinutes;
-        if (roundedMinutes >= config.workingEndMinutes) {
+        if (roundedMinutes >= workingHours.endMinutes) {
             return null;
         }
-        if (roundedMinutes <= config.workingStartMinutes) {
+        if (roundedMinutes <= workingHours.startMinutes) {
             return "Start times are no longer available for this day (360h limit).";
         }
         return `Start times available until ${minutesToTime(roundedMinutes)} (360h limit).`;
     }
 
-    function buildDefaultSlots() {
+    function buildDefaultSlots(workingHours) {
         const slots = [];
-        for (let minutes = config.workingStartMinutes; minutes < config.workingEndMinutes; minutes += config.autoSlotMinutes) {
+        if (!workingHours) {
+            return slots;
+        }
+        for (let minutes = workingHours.startMinutes; minutes < workingHours.endMinutes; minutes += config.autoSlotMinutes) {
             slots.push({
                 time: minutesToTime(minutes),
                 available: true,
@@ -458,13 +525,18 @@ export function createSlots({ api, config, showToast, onSelectionChange }) {
         if (!selection.startDate || !selection.startTime || !selection.endTime) {
             return { valid: false, message: "Select a date and time range first." };
         }
+        const workingHours = resolveWorkingHours(selectedDate);
+        if (!workingHours) {
+            return { valid: false, message: "No booking hours for this day." };
+        }
         const startMinutes = timeToMinutes(selection.startTime);
         const endMinutes = timeToMinutes(selection.endTime);
         if (startMinutes >= endMinutes) {
             return { valid: false, message: "End time must be after start time." };
         }
-        if (startMinutes < config.workingStartMinutes || endMinutes > config.workingEndMinutes) {
-            return { valid: false, message: "Times must be within 09:00 and 17:00." };
+        if (startMinutes < workingHours.startMinutes || endMinutes > workingHours.endMinutes) {
+            const rangeLabel = formatWorkingRange(workingHours);
+            return { valid: false, message: `Times must be within ${rangeLabel}.` };
         }
         const durationMinutes = endMinutes - startMinutes;
         if (durationMinutes > config.maxBookingDurationMinutes) {

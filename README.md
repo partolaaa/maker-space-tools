@@ -55,7 +55,7 @@ Scheduled attempts run inside `MakerSpaceAuthService.runWithFallback(...)`, whic
 
 | Rule | Value |
 | --- | --- |
-| Working hours | 09:00 to 17:00 |
+| Working hours | Mon-Fri 08:00-16:00, Sat 09:00-17:00 |
 | Maximum duration | 4 hours |
 | Maximum horizon | 360 hours ahead |
 | Slot alignment | 30-minute increments |
