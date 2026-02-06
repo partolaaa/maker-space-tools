@@ -21,6 +21,7 @@ export function createCalendar({ config, onDateSelected, getIsAutoMode }) {
 
     let visibleMonth = startOfMonth(today);
     let selectedDate = null;
+    let bookedDates = new Set();
 
     if (prevMonthButton) {
         prevMonthButton.addEventListener("click", () => {
@@ -59,6 +60,12 @@ export function createCalendar({ config, onDateSelected, getIsAutoMode }) {
 
             if (selectedDate && isSameDay(date, selectedDate)) {
                 button.classList.add("is-selected");
+            }
+
+            const dateKey = formatDate(date);
+            if (bookedDates.has(dateKey)) {
+                button.classList.add("has-booking");
+                button.title = "You have a booking on this day.";
             }
 
             if (!isSelectableDate(date)) {
@@ -106,8 +113,14 @@ export function createCalendar({ config, onDateSelected, getIsAutoMode }) {
         return selectedDate;
     }
 
+    function setBookedDates(dates) {
+        bookedDates = new Set(dates || []);
+        render();
+    }
+
     return {
         render,
-        getSelectedDate
+        getSelectedDate,
+        setBookedDates
     };
 }

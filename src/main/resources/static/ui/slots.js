@@ -10,7 +10,7 @@ import {
 } from "../utils/dates.js";
 import { isUnauthorizedError } from "../api.js";
 
-export function createSlots({ api, config, showToast, onSelectionChange }) {
+export function createSlots({ api, config, showToast, onSelectionChange, onBookingsChange }) {
     const slotsGrid = document.getElementById("slotsGrid");
     const resourceName = document.getElementById("resourceName");
     const statusMessage = document.getElementById("statusMessage");
@@ -460,6 +460,33 @@ export function createSlots({ api, config, showToast, onSelectionChange }) {
         return slotInstant > maxDate;
     }
 
+    function resolveBookedDates(bookings) {
+        if (!bookings || bookings.length === 0) {
+            return new Set();
+        }
+        const dates = new Set();
+        bookings.forEach((booking) => {
+            const startValue = booking ? booking.fromTime : null;
+            const endValue = booking ? booking.toTime : null;
+            if (!startValue) {
+                return;
+            }
+            const startDate = new Date(startValue);
+            if (Number.isNaN(startDate.getTime())) {
+                return;
+            }
+            const endDate = endValue ? new Date(endValue) : startDate;
+            const resolvedEnd = Number.isNaN(endDate.getTime()) ? startDate : endDate;
+            let current = startOfDay(startDate);
+            const lastDay = startOfDay(resolvedEnd);
+            while (current <= lastDay) {
+                dates.add(formatDate(current));
+                current = new Date(current.getFullYear(), current.getMonth(), current.getDate() + 1);
+            }
+        });
+        return dates;
+    }
+
     function resolveHorizonMessage(slotIntervalMinutes, workingHours) {
         if (!selectedDate) {
             return null;
@@ -616,6 +643,10 @@ export function createSlots({ api, config, showToast, onSelectionChange }) {
     }
 
     function renderPendingBookings(bookings) {
+        if (onBookingsChange) {
+            const resolvedBookings = Array.isArray(bookings) ? bookings : [];
+            onBookingsChange(resolveBookedDates(resolvedBookings));
+        }
         if (!pendingBookingsList) {
             return;
         }

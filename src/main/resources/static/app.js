@@ -41,11 +41,17 @@
         .then(([apiModule, calendarModule, slotsModule, authModule, autoModule]) => {
             const api = apiModule.createApi();
             let autoBooking = null;
+            let calendar = null;
 
             const slots = slotsModule.createSlots({
                 api,
                 config: bookingConfig,
                 showToast,
+                onBookingsChange: (bookedDates) => {
+                    if (calendar) {
+                        calendar.setBookedDates(bookedDates);
+                    }
+                },
                 onSelectionChange: (selection) => {
                     if (autoBooking) {
                         autoBooking.updateSelectionSummary(selection);
@@ -71,7 +77,7 @@
                 validateAutoBookingSelection: slots.validateAutoBookingSelection
             });
 
-            const calendar = calendarModule.createCalendar({
+            calendar = calendarModule.createCalendar({
                 config: bookingConfig,
                 onDateSelected: (date) => slots.handleDateSelected(date),
                 getIsAutoMode: () => autoBooking.isAutoModeEnabled()

@@ -206,6 +206,32 @@ body {
     color: #ffffff;
 }
 
+.calendar-day.has-booking {
+    position: relative;
+}
+
+.calendar-day.has-booking::after {
+    content: "";
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: #10b981;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    box-shadow: 0 0 0 2px #f6f7fb;
+}
+
+.calendar-day.has-booking.is-selected::after {
+    background: #ffffff;
+    box-shadow: 0 0 0 2px #3c6df0;
+}
+
+.calendar-day.has-booking.is-disabled::after {
+    background: #cbd5e1;
+}
+
 .calendar-day.is-disabled {
     background: #f1f1f3;
     color: #b7bcc7;

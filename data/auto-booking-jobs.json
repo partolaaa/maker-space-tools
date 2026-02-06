@@ -5,7 +5,7 @@
   "startTime" : "11:00",
   "endTime" : "15:00",
   "status" : "ACTIVE",
-  "lastAttemptAt" : null,
+  "lastAttemptAt" : 1770412275.154379000,
   "lastBookedDate" : null,
   "createdAt" : 1769898100.608919000,
   "updatedAt" : 1769898100.608919000
