@@ -167,7 +167,8 @@ public class MakerSpaceAuthService {
                 authClient.logout("Bearer " + token);
             }
             log.info("User was logged out.");
-        } catch (InvalidMediaTypeException | RestClientResponseException ignored) {
+        } catch (InvalidMediaTypeException | RestClientResponseException exception) {
+            log.error("Error logging out.", exception);
         } finally {
             tokenState = null;
             runtimeCredentials = null;

@@ -1,6 +1,7 @@
 package com.makerspacetools.automation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +18,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 /**
  * JSON file-backed store for auto-booking jobs.
  */
+@Log4j2
 @Service
 class AutoBookingJobStorageService {
 
@@ -115,7 +117,8 @@ class AutoBookingJobStorageService {
                 Files.createDirectories(parent);
             }
             objectMapper.writerWithDefaultPrettyPrinter().writeValue(filePath.toFile(), jobs);
-        } catch (IOException ignored) {
+        } catch (IOException exception) {
+            log.error("Unable to save auto booking jobs", exception);
         }
     }
 }

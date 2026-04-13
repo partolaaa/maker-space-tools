@@ -37,7 +37,7 @@ public record AutoBookingJob(
     public AutoBookingJob {
         id = Objects.requireNonNullElseGet(id, UUID::randomUUID);
         createdAt = Objects.requireNonNullElseGet(createdAt, Instant::now);
-        updatedAt = createdAt;
+        updatedAt = Objects.requireNonNullElse(updatedAt, createdAt);
         status = Objects.requireNonNullElse(status, AutoBookingJobStatus.ACTIVE);
     }
 
@@ -72,7 +72,6 @@ public record AutoBookingJob(
      */
     public AutoBookingJob withLastAttemptAt(Instant lastAttemptAt) {
         return this.toBuilder()
-                .lastBookedDate(lastBookedDate)
                 .lastAttemptAt(lastAttemptAt)
                 .updatedAt(Instant.now())
                 .build();
